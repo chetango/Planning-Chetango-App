@@ -1,0 +1,49 @@
+@startuml CU_Profesor
+!theme cerulean
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor #E0F7FA
+  BorderColor #00796B
+  FontColor #004D40
+}
+skinparam actor {
+  BackgroundColor #B2EBF2
+  BorderColor #00796B
+  FontColor #004D40
+}
+
+skinparam note {
+  BackgroundColor #FFEB3B
+  BorderColor #F57F17
+  FontColor #000000
+}
+left to right direction
+
+
+actor Profesor
+actor Sistema
+
+rectangle "App Chetango - Profesor" {
+  (Crear clase) as CC
+  (Registrar asistencia) as RA
+  (Consultar historial de clases impartidas) as CHI
+  (Ver advertencias por paquetes vencidos) as VP
+  (Consultar reporte mensual) as CRM
+  (Exportar reporte en PDF) as ERP
+  (Registrar clase privada) as RCP
+  (Consultar detalle de asistencia por clase) as CDC
+
+  CHI <.. ERP : <<extend>>
+}
+
+Profesor --> CC
+Profesor --> RA
+Profesor --> CHI
+Profesor --> VP
+Profesor --> CRM
+Profesor --> ERP
+Profesor --> RCP
+Profesor --> CDC
+
+Sistema --> VP : "Muestra alerta si paquete está vencido"
+@enduml

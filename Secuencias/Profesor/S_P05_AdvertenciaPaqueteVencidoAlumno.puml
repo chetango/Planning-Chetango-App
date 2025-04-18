@@ -1,0 +1,45 @@
+@startuml S_P05_AdvertenciaPaqueteVencidoAlumno
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Profesor ve advertencia por paquete vencido al registrar asistencia
+
+actor "Profesor" as PR
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Asistencia" as AS
+participant "Módulo Notificaciones" as NOTI
+database "Base de Datos" as DB
+
+== Registro de asistencia ==
+PR -> FE : Marca asistencia de alumno
+FE -> API : POST /asistencias [JWT, alumnoId, claseId]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> AS : Verificar estado del paquete del alumno
+    activate AS
+
+    AS -> DB : SELECT * FROM Paquete WHERE id_alumno = 123 AND estado = 'activo'
+    DB --> AS : Sin resultados (vencido o agotado)
+    deactivate DB
+
+    AS -> NOTI : Generar advertencia por paquete vencido
+    NOTI -> DB : INSERT INTO Notificaciones (alumno, tipo: vencimiento)
+
+    API -> FE : Mostrar alerta en el panel del profesor
+    FE -> PR : Alerta: "Este alumno tiene su paquete vencido"
+    deactivate AS
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> PR : Mostrar error de sesión
+    deactivate API
+end
+
+@enduml

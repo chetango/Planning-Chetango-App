@@ -1,0 +1,35 @@
+@startuml S_SYS01_GenerarAlertaPaquetePorVencer
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Sistema genera alerta por paquete próximo a vencerse
+
+actor "Alumno" as AL
+participant "Job Diario" as JOB
+participant "Módulo Paquetes" as PK
+participant "Módulo Notificaciones" as NOTI
+participant "Servicio de Mensajería (WhatsApp/Email)" as MSG
+database "Base de Datos" as DB
+
+== Ejecución diaria (ej. 3am) ==
+JOB -> PK : Buscar paquetes con fecha_vencimiento = HOY + 1
+PK -> DB : SELECT * FROM Paquetes WHERE fecha_vencimiento = CURDATE() + 1 AND estado = 'activo'
+DB --> PK : Lista de alumnos con paquetes próximos a vencer
+
+PK -> NOTI : Generar notificación tipo "vencimiento"
+activate NOTI
+
+loop Por cada alumno
+    NOTI -> DB : INSERT INTO Notificaciones (id_alumno, tipo: 'vencimiento', mensaje)
+    NOTI -> MSG : Enviar mensaje a alumno (WhatsApp/Email)
+end
+
+NOTI --> JOB : Proceso completado
+deactivate NOTI
+
+note right of AL
+  El alumno recibe un mensaje o ve la alerta
+  en su panel la próxima vez que inicie sesión.
+end note
+
+@enduml

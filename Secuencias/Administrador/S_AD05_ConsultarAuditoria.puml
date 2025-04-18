@@ -1,0 +1,50 @@
+@startuml S_AD05_ConsultarAuditoria
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador consulta historial de auditoría
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Accede al panel de auditoría
+ADM -> FE : Filtra por usuario, módulo o fecha
+
+FE -> API : GET /auditoria?usuarioId=&modulo=&desde=&hasta= [JWT]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol administrador
+    API -> AUD : Ejecutar consulta de historial
+    activate AUD
+
+    AUD -> DB : SELECT * FROM HistorialAuditoria WHERE filtros
+    DB --> AUD : Resultados
+    deactivate AUD
+
+    API -> FE : Respuesta 200 OK con historial
+    FE -> ADM : Mostrar lista de eventos
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de BD
+    AUD -> API : 500 Error
+    API -> FE : No se pudo consultar historial
+    FE -> ADM : Mostrar error temporal
+end
+
+@enduml

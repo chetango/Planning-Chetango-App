@@ -1,0 +1,52 @@
+@startuml S_AD07_GenerarReporteConsolidado
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador genera reporte consolidado
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Reportes" as RP
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Ingresa a módulo de reportes
+ADM -> FE : Elige rango de fechas y tipo de reporte
+FE -> API : POST /reportes/consolidado [JWT, filtros]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol administrador
+    API -> AUD : Log "Generación reporte consolidado"
+    API -> RP : Procesar solicitud
+    activate RP
+
+    RP -> DB : Consultas múltiples (asistencia, pagos, profesores)
+    DB --> RP : Datos agregados
+    RP -> API : Archivo generado (PDF/Excel)
+    deactivate RP
+
+    API -> FE : Descargar archivo
+    FE -> ADM : Mostrar mensaje de éxito y botón de descarga
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de generación
+    RP -> API : 500 Error
+    API -> FE : No se pudo generar reporte
+    FE -> ADM : Mostrar mensaje temporal
+end
+
+@enduml

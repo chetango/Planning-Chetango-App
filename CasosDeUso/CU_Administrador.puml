@@ -1,0 +1,72 @@
+@startuml CU_Administrador
+!theme cerulean
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor #E0F7FA
+  BorderColor #00796B
+  FontColor #004D40
+}
+skinparam actor {
+  BackgroundColor #B2EBF2
+  BorderColor #00796B
+  FontColor #004D40
+}
+
+skinparam note {
+  BackgroundColor #FFEB3B
+  BorderColor #F57F17
+  FontColor #000000
+}
+left to right direction
+
+actor Administrador
+actor Sistema
+
+rectangle "App Chetango - Administrador" {
+  (Crear, editar y eliminar usuarios) as CEU
+  (Asignar roles a usuarios) as AR
+  (Registrar pagos) as RP
+  (Modificar pagos) as MP
+  (Consultar historial de pagos por alumno) as CHP
+  (Consultar historial de asistencia por alumno) as CHA
+  (Exportar reportes en PDF o Excel) as EXR
+  (Configurar sistema) as CONF
+  (Congelar o reactivar paquetes) as CRP
+  (Aprobar edición de datos personales) as AED
+  (Consultar historial de auditoría) as HA
+  (Generar reportes consolidados) as GR
+  (Ver métricas clave del día) as MET
+
+  (Alerta: Paquete por vencer) as AV
+  (Alerta: Paquete agotado) as AA
+  (Alerta: Inasistencia prolongada) as AI
+
+  GR <.. EXR : <<extend>>
+  CHP <.. EXR : <<extend>>
+  CHA <.. EXR : <<extend>>
+}
+
+Administrador --> CEU
+Administrador --> AR
+Administrador --> RP
+Administrador --> MP
+Administrador --> CHP
+Administrador --> CHA
+Administrador --> EXR
+Administrador --> CONF
+Administrador --> CRP
+Administrador --> AED
+Administrador --> HA
+Administrador --> GR
+Administrador --> MET
+
+Sistema --> AV
+Sistema --> AA
+Sistema --> AI
+
+note right of AED
+  «triggered by solicitud del alumno»
+  y requiere aprobación manual
+end note
+
+@enduml

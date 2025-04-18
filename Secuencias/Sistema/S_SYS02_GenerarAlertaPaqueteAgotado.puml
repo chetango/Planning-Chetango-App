@@ -1,0 +1,34 @@
+@startuml S_SYS02_GenerarAlertaPaqueteAgotado
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Sistema genera alerta por paquete agotado
+
+actor "Alumno" as AL
+participant "Módulo Asistencia" as AS
+participant "Módulo Paquetes" as PK
+participant "Módulo Notificaciones" as NOTI
+participant "Servicio de Mensajería (WhatsApp/Email)" as MSG
+database "Base de Datos" as DB
+
+== Durante el registro de asistencia ==
+AS -> PK : Consultar estado del paquete del alumno
+PK -> DB : SELECT * FROM Paquetes WHERE id_alumno = {id} AND estado = 'activo'
+DB --> PK : Resultado con clases_usadas = clases_disponibles
+
+alt Paquete agotado
+    PK -> NOTI : Crear alerta "paquete agotado"
+    activate NOTI
+
+    NOTI -> DB : INSERT INTO Notificaciones (tipo: agotado, id_alumno)
+    NOTI -> MSG : Enviar alerta a alumno (WhatsApp o Email)
+    deactivate NOTI
+end
+
+== El sistema también puede ejecutarlo por Job Diario ==
+note right of PK
+  Alternativamente, el sistema puede escanear
+  todos los paquetes al final del día y generar alertas.
+end note
+
+@enduml

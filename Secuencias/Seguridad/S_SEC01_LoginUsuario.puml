@@ -1,0 +1,42 @@
+@startuml S_SEC01_LoginUsuario
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Inicio de sesión del usuario
+
+actor "Usuario" as USR
+participant "App Web (Frontend)" as FE
+participant "API Auth" as AUTH
+participant "Servicio de Identidad (Cognito)" as IDP
+participant "Módulo Roles" as ROLES
+participant "Módulo Auditoría" as AUD
+
+== Inicio ==
+USR -> FE : Ingresa usuario y contraseña
+FE -> AUTH : POST /login {credenciales}
+activate AUTH
+
+AUTH -> IDP : Validar credenciales
+activate IDP
+alt Credenciales válidas
+    IDP --> AUTH : JWT + claims (usuarioId)
+    deactivate IDP
+
+    AUTH -> ROLES : Obtener roles del usuario
+    ROLES -> ROLES : Buscar roles por usuarioId
+    ROLES --> AUTH : Lista de roles
+
+    AUTH -> AUD : Log "Inicio de sesión exitoso"
+    AUTH --> FE : JWT + perfil + rol activo
+    FE -> USR : Redirige según rol (alumno / profesor / admin)
+    deactivate AUTH
+else Credenciales inválidas
+    IDP --> AUTH : Error 401
+    deactivate IDP
+
+    AUTH -> FE : 401 Unauthorized
+    FE -> USR : Mostrar error "Credenciales incorrectas"
+    deactivate AUTH
+end
+
+@enduml

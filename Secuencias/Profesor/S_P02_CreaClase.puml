@@ -1,0 +1,57 @@
+@startuml S_P02_CreaClase
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Profesor crea clase
+
+actor "Profesor" as PR
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Clases" as CL
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+PR -> FE : Inicia sesión y accede al panel
+PR -> FE : Clic en "Crear clase"
+FE -> API : POST /clases [JWT, tipo, fecha, hora, rol, alumnos[]]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol del usuario y formato de datos
+    API -> AUD : Log "Creación de clase"
+
+    API -> CL : Solicitud para registrar clase
+    activate CL
+    CL -> DB : INSERT INTO Clases (tipo, fecha, hora, profesor, monitor)
+    DB --> CL : Confirmación ID clase
+
+    alt clase privada con alumnos definidos
+        CL -> DB : Asignar alumnos a clase privada
+    end
+
+    CL -> API : 201 Created con ID clase
+    deactivate CL
+
+    API -> FE : Clase registrada correctamente
+    FE -> PR : Mostrar mensaje de éxito
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> PR : Mostrar error de sesión
+    deactivate API
+end
+
+group Si ocurre error en BD
+    CL -> API : 500 Error
+    API -> FE : Error al guardar clase
+    FE -> PR : Mostrar error de sistema
+end
+
+@enduml

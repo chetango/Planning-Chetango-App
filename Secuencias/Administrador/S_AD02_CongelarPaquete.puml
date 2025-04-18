@@ -1,0 +1,54 @@
+@startuml S_AD02_CongelarPaquete
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador congela paquete
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Paquetes" as PK
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Accede a perfil del alumno
+ADM -> FE : Selecciona paquete activo y elige "Congelar"
+ADM -> FE : Define rango de fechas (inicio, fin)
+
+FE -> API : POST /paquetes/congelar [JWT, id_paquete, fechas]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol = administrador
+    API -> AUD : Log "Congelación de paquete"
+
+    API -> PK : Procesar congelación
+    activate PK
+
+    PK -> DB : INSERT INTO CongelacionPaquete (id_paquete, fecha_inicio, fecha_fin)
+    DB --> PK : Confirmación OK
+    deactivate PK
+
+    API -> FE : Confirmación de congelación exitosa
+    FE -> ADM : Mostrar mensaje de éxito
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error en base de datos
+    PK -> API : 500 Error
+    API -> FE : No se pudo congelar
+    FE -> ADM : Mostrar mensaje temporal
+end
+
+@enduml

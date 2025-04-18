@@ -1,0 +1,59 @@
+@startuml S_AD01_RegistrarPago
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador registra pago
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Pagos" as PG
+participant "Módulo Paquetes" as PK
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Accede al panel administrativo (JWT)
+ADM -> FE : Completa formulario de pago (alumno, monto, método, fecha, comprobante)
+FE -> API : POST /pagos [JWT, datos de pago]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol = administrador
+    API -> AUD : Log "Registro de pago"
+
+    API -> PG : Procesar pago
+    activate PG
+    PG -> DB : INSERT INTO Pagos (datos)
+    DB --> PG : id_pago generado
+
+    PG -> PK : Crear paquete relacionado
+    PK -> DB : INSERT INTO Paquetes (id_pago, clases_disponibles, fecha_activación, vigencia)
+    DB --> PK : id_paquete creado
+    deactivate PK
+
+    PG -> API : 201 Created
+    deactivate PG
+
+    API -> FE : Confirmación registro pago y paquete
+    FE -> ADM : Mostrar mensaje de éxito
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error en BD
+    PG -> API : 500 Internal Error
+    API -> FE : Error al registrar pago
+    FE -> ADM : Mostrar mensaje temporal
+end
+
+@enduml

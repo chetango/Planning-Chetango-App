@@ -1,0 +1,52 @@
+@startuml S_AD06_ConsultarMétricasDiarias
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador consulta métricas diarias
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Métricas" as MET
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Accede al panel principal (JWT)
+ADM -> FE : Visualiza resumen del día
+
+FE -> API : GET /metricas/dia [JWT]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol administrador
+    API -> AUD : Log "Consulta métricas del día"
+    API -> MET : Obtener resumen diario
+    activate MET
+
+    MET -> DB : Consultas agregadas (pagos, asistencias, clases, alertas)
+    DB --> MET : Datos consolidados
+    deactivate MET
+
+    API -> FE : 200 OK con resumen
+    FE -> ADM : Mostrar tarjetas y gráficas
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de sistema
+    MET -> API : 500 Error
+    API -> FE : No se pudo cargar métricas
+    FE -> ADM : Mostrar mensaje temporal
+end
+
+@enduml

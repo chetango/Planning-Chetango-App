@@ -1,0 +1,60 @@
+@startuml S_P01_RegistrarAsistencia
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Profesor registra asistencia
+
+actor "Profesor" as PR
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Clases" as CL
+participant "Módulo Asistencia" as AS
+participant "Módulo Notificaciones" as NOTI
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+PR -> FE : Ingresa a su clase del día (JWT)
+PR -> FE : Marca asistencia de alumno(s)
+FE -> API : POST /asistencias [JWT, alumnoId[], claseId]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar claseId y permisos del profesor
+    API -> AUD : Log "Registro asistencia"
+
+    loop por cada alumno
+        API -> AS : Validar estado del paquete
+        AS -> DB : SELECT paquete activo del alumno
+        DB --> AS : datos del paquete
+        alt paquete vencido o sin clases
+            AS -> NOTI : Generar advertencia para alumno y profesor
+            NOTI -> DB : INSERT INTO Notificaciones
+        end
+
+        AS -> DB : INSERT INTO Asistencia (alumno, clase, paquete_usado, observación)
+    end
+
+    AS -> API : Confirmación registro completo
+    API -> FE : Respuesta 200 OK
+    FE -> PR : Mostrar mensaje de éxito
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> PR : Mostrar error de sesión
+    deactivate API
+end
+
+group Si ocurre error en BD
+    AS -> API : 500 Internal Error
+    API -> FE : Error al guardar
+    FE -> PR : Mostrar mensaje de error
+end
+
+@enduml

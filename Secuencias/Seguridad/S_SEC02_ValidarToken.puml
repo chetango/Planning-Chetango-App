@@ -1,0 +1,39 @@
+@startuml S_SEC02_ValidarToken
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Validación de token JWT en cada solicitud
+
+actor "Usuario" as USR
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Servicio de Identidad (Cognito / Custom)" as IDP
+
+== Flujo general de solicitud protegida ==
+USR -> FE : Realiza acción protegida (ver datos, enviar formulario)
+FE -> API : Solicitud con Authorization: Bearer <token>
+activate API
+
+API -> AUTH : Validar token JWT
+activate AUTH
+
+AUTH -> IDP : Verificar firma y expiración del token
+IDP --> AUTH : OK / Error (401)
+deactivate IDP
+
+alt Token válido
+    AUTH --> API : Usuario autenticado
+    API -> FE : Continua con la solicitud (respuesta del recurso)
+    FE -> USR : Mostrar resultados
+    deactivate AUTH
+    deactivate API
+else Token inválido / expirado
+    AUTH --> API : 401 Unauthorized
+    API -> FE : 401 Unauthorized
+    FE -> USR : Solicitar re-login
+    deactivate AUTH
+    deactivate API
+end
+
+@enduml

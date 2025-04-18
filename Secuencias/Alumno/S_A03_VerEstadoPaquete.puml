@@ -1,0 +1,62 @@
+@startuml S_A03_VerEstadoPaquete
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Alumno consulta estado del paquete
+
+actor "Alumno" as AL
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Paquetes" as PK
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio del flujo ==
+AL -> FE : Accede al panel (JWT)
+AL -> FE : Hace clic en "Mi paquete"
+
+FE -> API : GET /paquetes/estado?alumnoId=123 [JWT]
+activate API
+
+API -> AUTH : Validar token JWT
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Verificar rate limit
+    alt Límite excedido
+        API -> FE : 429 Too Many Requests
+        FE -> AL : Mostrar aviso de límite
+    else
+        API -> AUD : Log "Consulta estado del paquete"
+        API -> PK : alumnoId
+        activate PK
+
+        PK -> DB : SELECT * FROM Paquetes WHERE id_alumno = 123 AND estado = 'activo'
+        activate DB
+        PK <-- DB : datos (clases_disponibles, usadas, fecha_vencimiento, estado)
+        deactivate DB
+
+        PK -> API : JSON con estado del paquete
+        deactivate PK
+
+        API -> FE : 200 OK con detalles del paquete
+        deactivate API
+
+        FE -> AL : Mostrar clases restantes y vencimiento
+    end
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> AL : Mostrar error de sesión
+    deactivate API
+end
+
+group Si error en base de datos
+    PK -> API : 500 Error
+    API -> FE : No se pudo cargar
+    FE -> AL : Mostrar mensaje de error temporal
+end
+
+@enduml

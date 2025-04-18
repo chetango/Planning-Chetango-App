@@ -1,0 +1,141 @@
+@startuml data
+!theme cerulean
+skinparam linetype ortho
+
+entity "Usuario" as Usuario {
+  * id_usuario : UUID
+  --
+  nombre_completo : string
+  nombre_usuario : string <<UNIQUE>>
+  contraseña_encriptada : string
+  tipo_documento : enum
+  numero_documento : string <<UNIQUE>>
+  correo : string
+  telefono : string
+  estado : enum
+  fecha_creacion : datetime
+}
+
+entity "UsuarioRol" as UsuarioRol {
+  * id_usuario : UUID
+  * rol : enum
+}
+
+entity "Alumno" as Alumno {
+  * id_alumno : UUID
+  --
+  id_usuario : UUID
+}
+
+entity "Profesor" as Profesor {
+  * id_profesor : UUID
+  --
+  id_usuario : UUID
+}
+
+entity "Clase" as Clase {
+  * id_clase : UUID
+  --
+  fecha : date
+  tipo_clase : enum
+  hora_inicio : time
+  hora_fin : time
+  id_profesor_principal : UUID
+}
+
+entity "MonitorClase" as MonitorClase {
+  * id_monitor_clase : UUID
+  --
+  id_clase : UUID
+  id_profesor : UUID
+}
+
+entity "Asistencia" as Asistencia {
+  * id_asistencia : UUID
+  --
+  id_clase : UUID
+  id_alumno : UUID
+  id_paquete_usado : UUID
+  estado : enum  ' vigente | sin_paquete | vencido
+  observacion : string
+}
+
+entity "Paquete" as Paquete {
+  * id_paquete : UUID
+  --
+  id_pago : UUID
+  clases_disponibles : int
+  clases_usadas : int
+  fecha_activacion : date
+  fecha_vencimiento : date
+  estado : enum
+  tipo_paquete : enum
+}
+
+entity "CongelacionPaquete" as Congelacion {
+  * id_congelacion : UUID
+  --
+  id_paquete : UUID
+  fecha_inicio : date
+  fecha_fin : date
+}
+
+entity "Pago" as Pago {
+  * id_pago : UUID
+  --
+  id_alumno : UUID
+  fecha_pago : date
+  monto : decimal
+  metodo_pago : enum
+  comprobante_url : string
+  nota : string
+}
+
+entity "Notificación" as Notificacion {
+  * id_notificacion : UUID
+  --
+  id_alumno : UUID
+  tipo : enum
+  mensaje : string
+  leida : boolean
+  fecha_envio : datetime
+}
+
+entity "HistorialAuditoria" as Auditoria {
+  * id_auditoria : UUID
+  --
+  id_usuario : UUID
+  modulo : string
+  accion : string
+  descripcion : string
+  fecha_hora : datetime
+}
+
+entity "ConfiguracionSistema" as Config {
+  * id_config : UUID
+  --
+  anticipacion_alerta : int
+  texto_vencimiento : string
+  texto_agotamiento : string
+  ultima_modificacion : datetime
+}
+
+' Relaciones principales
+
+Usuario }|--|| UsuarioRol : tiene
+Usuario ||--|| Alumno
+Usuario ||--|| Profesor
+Alumno ||--o{ Paquete : "tiene"
+Alumno ||--o{ Pago : "realiza"
+Alumno ||--o{ Asistencia : "asiste"
+Alumno ||--o{ Notificacion : "recibe"
+Profesor ||--o{ Clase : "imparte"
+Clase ||--o{ MonitorClase : "tiene"
+MonitorClase }o--|| Profesor : "es monitor"
+Clase ||--o{ Asistencia : "registra"
+Asistencia }o--|| Paquete : "usa"
+Pago ||--o{ Paquete : "genera"
+Paquete ||--o{ Congelacion : "puede tener"
+Usuario ||--o{ Auditoria : "genera"
+
+@enduml

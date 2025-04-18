@@ -1,0 +1,56 @@
+@startuml S_P04_ConsultaReporteMensual
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Profesor consulta reporte mensual
+
+actor "Profesor" as PR
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Reportes" as RP
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+PR -> FE : Inicia sesión (JWT en cookies)
+PR -> FE : Clic en "Ver reporte mensual"
+
+FE -> API : GET /reportes/profesor?mes=2024-04 [JWT]
+activate API
+
+API -> AUTH : Validar token JWT
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol y parámetros
+    API -> AUD : Log "Consulta reporte mensual profesor"
+
+    API -> RP : Obtener clases impartidas y totales por tipo
+    activate RP
+
+    RP -> DB : SELECT clases WHERE profesorId=789 AND mes='2024-04'
+    DB --> RP : Datos (clases, tipo, rol, fechas, pago unitario)
+    deactivate DB
+
+    RP -> API : JSON con resumen mensual (total clases, valor a pagar)
+    deactivate RP
+
+    API -> FE : Respuesta 200 OK con reporte
+    FE -> PR : Mostrar resumen + botón exportar
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> PR : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de BD
+    RP -> API : 500 Internal Error
+    API -> FE : Error al cargar reporte
+    FE -> PR : Mostrar mensaje temporal
+end
+
+@enduml

@@ -1,0 +1,58 @@
+@startuml S_AD04_AprobarEdicionDatos
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador aprueba edición de datos
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Perfil" as PERF
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Accede a solicitudes de edición
+ADM -> FE : Revisa solicitud del alumno
+ADM -> FE : Acepta o rechaza modificación
+
+FE -> API : PUT /solicitudes-edicion/{id} [JWT, decisión]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Verificar rol administrador
+    API -> AUD : Log "Revisión de edición de datos"
+
+    API -> PERF : Procesar decisión
+    activate PERF
+
+    alt Aprobación
+        PERF -> DB : UPDATE Alumno SET telefono = ..., correo = ...
+    else Rechazo
+        PERF -> DB : UPDATE SolicitudesEdicion SET estado = 'rechazado'
+    end
+    DB --> PERF : Confirmación OK
+    deactivate PERF
+
+    API -> FE : Confirmación acción
+    FE -> ADM : Mostrar mensaje de éxito
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de base de datos
+    PERF -> API : 500 Error
+    API -> FE : No se pudo procesar
+    FE -> ADM : Mostrar error temporal
+end
+
+@enduml

@@ -1,0 +1,55 @@
+@startuml S_AD10_VerDetalleClase
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador consulta detalle de clase
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Clases" as CL
+participant "Módulo Asistencia" as AS
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Busca y selecciona una clase del calendario o listado
+FE -> API : GET /clases/{id}/detalle [JWT]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol administrador
+    API -> AUD : Log "Vista detalle clase"
+
+    API -> CL : Obtener datos de la clase
+    CL -> DB : SELECT * FROM Clases WHERE id_clase = {id}
+    DB --> CL : Datos de la clase (tipo, fecha, profesores)
+    deactivate CL
+
+    API -> AS : Obtener lista de asistentes
+    AS -> DB : SELECT * FROM Asistencia WHERE id_clase = {id}
+    DB --> AS : Lista de asistencias con alumnos y paquete usado
+    deactivate AS
+
+    API -> FE : Respuesta completa con clase y asistentes
+    FE -> ADM : Mostrar detalle (profesores, tipo, asistentes, notas)
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de base de datos
+    CL -> API : 500 Error
+    API -> FE : No se pudo cargar información de la clase
+    FE -> ADM : Mostrar mensaje de error
+end
+
+@enduml

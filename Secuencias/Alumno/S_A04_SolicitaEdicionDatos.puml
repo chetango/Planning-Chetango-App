@@ -1,0 +1,60 @@
+@startuml S_A04_SolicitaEdicionDatos
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Alumno solicita edición de datos personales
+
+actor "Alumno" as AL
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Perfil" as PERF
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio del flujo ==
+AL -> FE : Abre panel de perfil (JWT activo)
+AL -> FE : Cambia datos (teléfono, correo)
+FE -> API : POST /solicitudes-edicion [JWT, payload]
+activate API
+
+API -> AUTH : Validar token JWT
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Verificar rate limit
+    alt Límite excedido
+        API -> FE : 429 Too Many Requests
+        FE -> AL : Mostrar mensaje de espera
+    else
+        API -> AUD : Log "Solicitud edición de datos"
+        API -> PERF : Validar datos + generar solicitud
+        activate PERF
+
+        PERF -> DB : INSERT INTO SolicitudesEdicion
+        activate DB
+        DB --> PERF : Confirmación OK
+        deactivate DB
+
+        PERF -> API : 201 Created
+        deactivate PERF
+
+        API -> FE : Confirmación de solicitud enviada
+        FE -> AL : Mostrar mensaje "Tu solicitud será revisada"
+        deactivate API
+    end
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> AL : Mostrar error de sesión
+    deactivate API
+end
+
+group Error al registrar solicitud
+    PERF -> API : 500 Error
+    API -> FE : No se pudo registrar solicitud
+    FE -> AL : Mostrar error temporal
+end
+
+@enduml

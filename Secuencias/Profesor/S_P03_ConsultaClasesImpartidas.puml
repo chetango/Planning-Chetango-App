@@ -1,0 +1,60 @@
+@startuml S_P03_ConsultaClasesImpartidas
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Profesor consulta clases impartidas
+
+actor "Profesor" as PR
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Clases" as CL
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+PR -> FE : Accede al panel (JWT activo)
+PR -> FE : Clic en "Mis clases impartidas"
+
+FE -> API : GET /clases?profesorId=789&page=1 [JWT]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Verificar rate limit
+    alt Límite excedido
+        API -> FE : 429 Too Many Requests
+        FE -> PR : Mostrar aviso de espera
+    else
+        API -> AUD : Log "Consulta clases impartidas"
+        API -> CL : profesorId, filtros
+        activate CL
+
+        CL -> DB : SELECT * FROM Clases WHERE profesorId = 789
+        DB --> CL : Lista paginada de clases
+        deactivate DB
+
+        CL -> API : JSON con clases impartidas
+        deactivate CL
+
+        API -> FE : 200 OK con datos
+        FE -> PR : Renderiza historial (tipo, fecha, rol, asistentes)
+        deactivate API
+    end
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> PR : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de BD
+    CL -> API : 500 Error
+    API -> FE : Error al consultar clases
+    FE -> PR : Mostrar error temporal
+end
+
+@enduml

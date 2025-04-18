@@ -1,0 +1,36 @@
+@startuml S_SYS03_GenerarAlertaInasistenciaProlongada
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Sistema genera alerta por inasistencia prolongada
+
+actor "Alumno" as AL
+participant "Job Diario" as JOB
+participant "Módulo Asistencia" as AS
+participant "Módulo Notificaciones" as NOTI
+participant "Servicio de Mensajería (WhatsApp/Email)" as MSG
+database "Base de Datos" as DB
+
+== Proceso diario ==
+JOB -> AS : Buscar alumnos con última asistencia > 5 días
+AS -> DB : SELECT id_alumno, MAX(fecha) GROUP BY id_alumno
+DB --> AS : Lista de alumnos y última fecha
+
+AS -> AS : Filtrar alumnos con inasistencia > 5 días
+
+loop Por cada alumno detectado
+    AS -> NOTI : Crear alerta tipo "inasistencia"
+    activate NOTI
+    NOTI -> DB : INSERT INTO Notificaciones (tipo: inasistencia, id_alumno)
+    NOTI -> MSG : Enviar recordatorio al alumno
+    deactivate NOTI
+end
+
+JOB <- NOTI : Confirmación alertas enviadas
+
+note right of AL
+  El alumno recibe mensaje y/o
+  visualiza la alerta al ingresar a la app.
+end note
+
+@enduml

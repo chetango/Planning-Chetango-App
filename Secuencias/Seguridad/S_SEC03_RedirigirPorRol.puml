@@ -1,0 +1,32 @@
+@startuml S_SEC03_RedirigirPorRol
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Redirección según rol del usuario después del login
+
+actor "Usuario" as USR
+participant "App Web (Frontend)" as FE
+participant "API Auth" as AUTH
+participant "Módulo Roles" as ROLES
+participant "Módulo Auditoría" as AUD
+
+== Inicio ==
+USR -> FE : Inicia sesión correctamente
+FE -> AUTH : POST /login {credenciales}
+AUTH --> FE : JWT + roles + datos básicos
+
+== Redirección automática ==
+FE -> FE : Decodifica JWT y roles
+
+alt Tiene 1 solo rol
+    FE -> FE : Redirige automáticamente a /panel/{rol}
+    FE -> AUD : Log "Usuario redirigido por rol"
+else Tiene múltiples roles
+    FE -> USR : Mostrar selector de rol (admin / profesor / alumno)
+    USR -> FE : Selecciona rol
+    FE -> FE : Guardar rol elegido (en memoria o localStorage)
+    FE -> AUD : Log "Usuario eligió rol: {rol}"
+    FE -> FE : Redirigir a /panel/{rol}
+end
+
+@enduml

@@ -1,0 +1,66 @@
+@startuml S_AD08_VerDetalleAlumno
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador consulta detalle de alumno
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Alumnos" as ALU
+participant "Módulo Asistencia" as AS
+participant "Módulo Pagos" as PG
+participant "Módulo Paquetes" as PK
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Busca y selecciona un alumno
+FE -> API : GET /alumnos/{id}/detalle [JWT]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol administrador
+    API -> AUD : Log "Vista detalle alumno"
+    
+    API -> ALU : Obtener datos del alumno
+    ALU -> DB : SELECT * FROM Alumno WHERE id = {id}
+    DB --> ALU : Datos personales
+    deactivate ALU
+
+    API -> AS : Obtener historial de asistencia
+    AS -> DB : SELECT * FROM Asistencia WHERE id_alumno = {id}
+    DB --> AS : Lista de asistencias
+    deactivate AS
+
+    API -> PG : Obtener historial de pagos
+    PG -> DB : SELECT * FROM Pagos WHERE id_alumno = {id}
+    DB --> PG : Lista de pagos
+    deactivate PG
+
+    API -> PK : Obtener paquetes asociados
+    PK -> DB : SELECT * FROM Paquetes WHERE id_alumno = {id}
+    DB --> PK : Lista de paquetes
+    deactivate PK
+
+    API -> FE : Respuesta completa (datos, asistencias, pagos, paquetes)
+    FE -> ADM : Mostrar vista completa del alumno
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de datos
+    API -> FE : No se pudo cargar información del alumno
+    FE -> ADM : Mostrar mensaje temporal
+end
+
+@enduml

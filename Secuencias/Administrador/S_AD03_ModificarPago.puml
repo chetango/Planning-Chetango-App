@@ -1,0 +1,54 @@
+@startuml S_AD03_ModificarPago
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador modifica un pago
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Pagos" as PG
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Accede al historial de pagos
+ADM -> FE : Selecciona pago a modificar
+ADM -> FE : Cambia datos (monto, fecha, método, comprobante)
+
+FE -> API : PUT /pagos/{id} [JWT, nuevos_datos]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol = administrador
+    API -> AUD : Log "Modificación de pago"
+
+    API -> PG : Actualizar datos del pago
+    activate PG
+
+    PG -> DB : UPDATE Pagos SET monto = ..., fecha = ..., ... WHERE id_pago = {id}
+    DB --> PG : Confirmación OK
+    deactivate PG
+
+    API -> FE : 200 OK - Pago modificado
+    FE -> ADM : Mostrar mensaje de éxito
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de base de datos
+    PG -> API : 500 Error
+    API -> FE : No se pudo actualizar pago
+    FE -> ADM : Mostrar mensaje temporal
+end
+
+@enduml

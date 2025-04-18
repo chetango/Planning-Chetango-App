@@ -1,0 +1,65 @@
+@startuml S_A01_ConsultaHistorialClases_v2
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Alumno consulta historial de clases (v2)
+
+actor "Alumno" as AL
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Asistencia" as AS
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio del flujo ==
+AL -> FE : Accede a panel con JWT
+AL -> FE : Clic en "Historial de clases"
+
+== Consulta al API ==
+FE -> API : GET /asistencias?alumnoId=123&page=1 [JWT]
+activate API
+
+API -> AUTH : Validar token JWT
+activate AUTH
+AUTH --> API : Token válido (alumnoId=123)
+deactivate AUTH
+
+alt Token válido
+    API -> API : Verificar rate limit
+    alt Límite excedido
+        API -> FE : 429 Too Many Requests
+        FE -> AL : Mostrar mensaje de espera
+    else
+        API -> AUD : Log "Consulta historial clases"
+        
+        API -> AS : alumnoId, page, size
+        activate AS
+
+        AS -> DB : SELECT asistencias JOIN Clase JOIN Profesor
+        activate DB
+        AS <-- DB : Resultados paginados
+        deactivate DB
+
+        AS -> API : JSON con datos de clases y profesores
+        deactivate AS
+
+        API -> FE : Respuesta paginada (200 OK)
+        deactivate API
+
+        FE -> AL : Mostrar historial de clases (tabla + paginación)
+    end
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> AL : Mostrar error de sesión expirada
+    deactivate API
+end
+
+== Manejo de errores opcional ==
+group Si ocurre error de base de datos
+    AS -> API : 500 Internal Server Error
+    API -> FE : Error temporal
+    FE -> AL : Mostrar mensaje "Inténtalo más tarde"
+end
+
+@enduml

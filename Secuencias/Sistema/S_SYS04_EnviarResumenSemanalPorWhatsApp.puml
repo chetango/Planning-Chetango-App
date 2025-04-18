@@ -1,0 +1,39 @@
+@startuml S_SYS04_EnviarResumenSemanalPorWhatsApp
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Sistema envía resumen semanal al alumno (WhatsApp/Email)
+
+actor "Alumno" as AL
+participant "Job Semanal (Domingo)" as JOB
+participant "Módulo Asistencia" as AS
+participant "Módulo Pagos" as PG
+participant "Módulo Paquetes" as PK
+participant "Servicio de Mensajería" as MSG
+database "Base de Datos" as DB
+
+== Cada domingo ==
+JOB -> AS : Obtener resumen de asistencias semana actual
+AS -> DB : SELECT COUNT(*) FROM Asistencia WHERE fecha BETWEEN semana_actual AND id_alumno
+DB --> AS : Total de clases asistidas
+
+JOB -> PG : Obtener resumen de pagos recientes
+PG -> DB : SELECT * FROM Pagos WHERE fecha BETWEEN semana_actual AND id_alumno
+DB --> PG : Lista de pagos
+
+JOB -> PK : Consultar estado del paquete actual
+PK -> DB : SELECT * FROM Paquetes WHERE estado = 'activo' AND id_alumno
+DB --> PK : clases_restantes, fecha_vencimiento
+
+== Enviar resumen ==
+JOB -> MSG : Enviar WhatsApp/email al alumno con:
+- Asistencias realizadas
+- Pagos registrados
+- Clases restantes y vencimiento
+
+note right of AL
+  El alumno recibe un resumen semanal que refuerza
+  la comunicación institucional y seguimiento.
+end note
+
+@enduml

@@ -1,0 +1,41 @@
+@startuml S_A05_RecibeNotificacionVencimiento
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Sistema envía notificación de vencimiento al alumno
+
+actor "Alumno" as AL
+participant "Scheduler / Job Diario" as JOB
+participant "Módulo Paquetes" as PK
+participant "Módulo Notificaciones" as NOTI
+participant "WhatsApp/Email Service" as MSG
+database "Base de Datos" as DB
+
+== Proceso nocturno ==
+JOB -> PK : Consultar paquetes próximos a vencer
+activate PK
+
+PK -> DB : SELECT * FROM Paquetes WHERE fecha_vencimiento = CURDATE() + 1
+DB --> PK : Lista de alumnos con paquetes por vencer
+deactivate DB
+
+PK -> NOTI : Generar notificaciones por alumno
+activate NOTI
+
+loop Por cada alumno
+    NOTI -> DB : INSERT INTO Notificaciones (tipo: vencimiento, mensaje)
+    NOTI -> MSG : Enviar mensaje al alumno (WhatsApp/Email)
+end
+
+NOTI --> PK : Confirmación de notificaciones generadas
+deactivate NOTI
+
+PK --> JOB : Proceso finalizado
+
+== Usuario ve mensaje ==
+note right of AL
+  El alumno recibe un mensaje o
+  ve la alerta en su panel al iniciar sesión.
+end note
+
+@enduml

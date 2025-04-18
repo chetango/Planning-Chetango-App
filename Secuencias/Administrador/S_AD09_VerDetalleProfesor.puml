@@ -1,0 +1,63 @@
+@startuml S_AD09_VerDetalleProfesor
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Administrador consulta detalle de profesor
+
+actor "Administrador" as ADM
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Profesores" as PRO
+participant "Módulo Clases" as CL
+participant "Módulo Reportes" as RP
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio ==
+ADM -> FE : Busca y selecciona un profesor
+FE -> API : GET /profesores/{id}/detalle [JWT]
+activate API
+
+API -> AUTH : Validar token
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Validar rol administrador
+    API -> AUD : Log "Vista detalle profesor"
+
+    API -> PRO : Obtener datos personales del profesor
+    PRO -> DB : SELECT * FROM Profesor WHERE id = {id}
+    DB --> PRO : Datos personales
+    deactivate PRO
+
+    API -> CL : Obtener clases impartidas
+    CL -> DB : SELECT * FROM Clases WHERE id_profesor_principal = {id} OR id_monitor = {id}
+    DB --> CL : Lista de clases
+    deactivate CL
+
+    API -> RP : Obtener reporte acumulado (por fecha)
+    RP -> DB : SELECT resumen mensual WHERE id_profesor = {id}
+    DB --> RP : Totales de clases y pago acumulado
+    deactivate RP
+
+    API -> FE : JSON completo con info del profesor
+    FE -> ADM : Mostrar ficha detallada del profesor
+    deactivate API
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> ADM : Mostrar error de sesión
+    deactivate API
+end
+
+group Error de base de datos
+    CL -> API : 500 Error
+    AS -> API : 500 Error
+    API -> FE : No se pudo cargar información de la clase
+    FE -> ADM : Mostrar mensaje de error
+end
+
+
+@enduml

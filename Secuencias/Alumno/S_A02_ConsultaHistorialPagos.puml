@@ -1,0 +1,62 @@
+@startuml S_A02_ConsultaHistorialPagos
+!theme cerulean
+skinparam linetype ortho
+
+title Secuencia - Alumno consulta historial de pagos
+
+actor "Alumno" as AL
+participant "App Web (Frontend)" as FE
+participant "API Gateway" as API
+participant "Auth Service" as AUTH
+participant "Módulo Pagos" as PG
+participant "Módulo Auditoría" as AUD
+database "Base de Datos" as DB
+
+== Inicio del flujo ==
+AL -> FE : Accede al panel (JWT en cookies)
+AL -> FE : Hace clic en "Historial de pagos"
+
+FE -> API : GET /pagos?alumnoId=123&page=1 [JWT]
+activate API
+
+API -> AUTH : Validar token JWT
+activate AUTH
+AUTH --> API : Token válido
+deactivate AUTH
+
+alt Token válido
+    API -> API : Verificar rate limit
+    alt Límite excedido
+        API -> FE : 429 Too Many Requests
+        FE -> AL : Mostrar mensaje de espera
+    else
+        API -> AUD : Log "Consulta historial pagos"
+        API -> PG : alumnoId, paginación
+        activate PG
+
+        PG -> DB : SELECT pagos WHERE id_alumno = 123
+        activate DB
+        PG <-- DB : Datos paginados (monto, fecha, método, comprobante)
+        deactivate DB
+
+        PG -> API : JSON con lista de pagos
+        deactivate PG
+
+        API -> FE : Respuesta (200 OK) con lista y metadatos
+        deactivate API
+
+        FE -> AL : Renderiza tabla con historial y comprobantes
+    end
+else Token inválido
+    API -> FE : 401 Unauthorized
+    FE -> AL : Mostrar error de sesión
+    deactivate API
+end
+
+group Si error en base de datos
+    PG -> API : 500 Error
+    API -> FE : Error de sistema
+    FE -> AL : Mostrar mensaje "No se pudo cargar"
+end
+
+@enduml

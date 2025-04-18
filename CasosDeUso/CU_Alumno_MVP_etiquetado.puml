@@ -1,0 +1,70 @@
+@startuml CU_Alumno_Mejorado
+!theme cerulean
+skinparam linetype ortho
+skinparam rectangle {
+  BackgroundColor #E0F7FA
+  BorderColor #00796B
+  FontColor #004D40
+}
+skinparam actor {
+  BackgroundColor #B2EBF2
+  BorderColor #00796B
+  FontColor #004D40
+}
+
+skinparam note {
+  BackgroundColor #FFEB3B
+  BorderColor #F57F17
+  FontColor #000000
+}
+left to right direction
+
+actor Alumno
+actor Sistema
+
+rectangle "App Chetango - Alumno" {
+  (Reservar clase) <<future>> as RC
+  (Cancelar asistencia) <<future>> as CA
+  (Consultar historial de clases) as CHC
+  (Consultar historial de pagos) as CHP
+  (Ver estado de paquete) as EP
+  (Exportar historial en PDF) as EXP
+  (Solicitar edición de datos personales) as SED
+  (Configurar preferencias de alertas) <<future>> as CONFA
+  (Solicitar congelación de paquete) as SCP
+  (Renovar paquete) as RP
+
+  (Alerta: Vencimiento de paquete) as AV
+  (Alerta: Clases por agotarse) as AA
+  (Alerta: Inasistencia reciente) as AI
+
+  CHC <.. EXP : <<extend>>
+  CHP <.. EXP : <<extend>>
+}
+
+Alumno --> RC
+Alumno --> CA
+Alumno --> CHC
+Alumno --> CHP
+Alumno --> EP
+Alumno --> EXP
+Alumno --> SED
+Alumno --> CONFA
+Alumno --> SCP
+Alumno --> RP
+
+Sistema --> AV
+Sistema --> AA
+Sistema --> AI
+
+note right of CA
+  «pre» Solo se permite cancelar
+  con al menos 24h de anticipación
+end note
+
+note bottom of SED
+  «requires approval»
+  Revisión por parte del administrador
+end note
+
+@enduml
