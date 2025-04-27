@@ -70,6 +70,7 @@ entity "Paquete" as Paquete {
   fecha_vencimiento : date
   estado : enum
   tipo_paquete : enum
+  monto : decimal
 }
 
 entity "CongelacionPaquete" as Congelacion {
