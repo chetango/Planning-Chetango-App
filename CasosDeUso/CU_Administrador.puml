@@ -8,7 +8,7 @@ skinparam rectangle {
 }
 skinparam actor {
   BackgroundColor #B2EBF2
-  BorderColor #00796B
+  BorderColor rgb(1, 128, 113)
   FontColor #004D40
 }
 
