@@ -13,7 +13,7 @@ skinparam actor {
 }
 
 skinparam note {
-  BackgroundColor #FFEB3B
+  BackgroundColor rgb(241, 219, 21)
   BorderColor #F57F17
   FontColor #000000
 }
