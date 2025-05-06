@@ -1,3 +1,4 @@
+
 @startuml data
 !theme cerulean
 skinparam linetype ortho
@@ -5,9 +6,8 @@ skinparam linetype ortho
 entity "Usuario" as Usuario {
   * id_usuario : UUID
   --
-  nombre_completo : string
-  nombre_usuario : string <<UNIQUE>>
-  contraseña_encriptada : string
+  nombre_usuario : string
+  contraseña : string
   tipo_documento : enum
   numero_documento : string <<UNIQUE>>
   correo : string
@@ -30,7 +30,16 @@ entity "Alumno" as Alumno {
 entity "Profesor" as Profesor {
   * id_profesor : UUID
   --
+  tipo_profesor : enum
   id_usuario : UUID
+}
+
+entity "TarifaProfesor" as Tarifa {
+  * id_tarifa : UUID
+  --
+  tipo_profesor : enum
+  rol_en_clase : enum
+  valor_por_clase : decimal
 }
 
 entity "Clase" as Clase {
@@ -56,7 +65,7 @@ entity "Asistencia" as Asistencia {
   id_clase : UUID
   id_alumno : UUID
   id_paquete_usado : UUID
-  estado : enum  ' vigente | sin_paquete | vencido
+  estado : enum
   observacion : string
 }
 
@@ -70,7 +79,7 @@ entity "Paquete" as Paquete {
   fecha_vencimiento : date
   estado : enum
   tipo_paquete : enum
-  monto : decimal
+  valor_paquete : decimal
 }
 
 entity "CongelacionPaquete" as Congelacion {
@@ -86,16 +95,15 @@ entity "Pago" as Pago {
   --
   id_alumno : UUID
   fecha_pago : date
-  monto : decimal
+  monto_total : decimal
   metodo_pago : enum
-  comprobante_url : string
   nota : string
 }
 
 entity "Notificación" as Notificacion {
   * id_notificacion : UUID
   --
-  id_alumno : UUID
+  id_usuario : UUID
   tipo : enum
   mensaje : string
   leida : boolean
@@ -122,14 +130,13 @@ entity "ConfiguracionSistema" as Config {
 }
 
 ' Relaciones principales
-
 Usuario }|--|| UsuarioRol : tiene
 Usuario ||--|| Alumno
 Usuario ||--|| Profesor
 Alumno ||--o{ Paquete : "tiene"
 Alumno ||--o{ Pago : "realiza"
 Alumno ||--o{ Asistencia : "asiste"
-Alumno ||--o{ Notificacion : "recibe"
+Usuario ||--o{ Notificacion : "recibe"
 Profesor ||--o{ Clase : "imparte"
 Clase ||--o{ MonitorClase : "tiene"
 MonitorClase }o--|| Profesor : "es monitor"
@@ -138,5 +145,6 @@ Asistencia }o--|| Paquete : "usa"
 Pago ||--o{ Paquete : "genera"
 Paquete ||--o{ Congelacion : "puede tener"
 Usuario ||--o{ Auditoria : "genera"
+Profesor ||--o{ Tarifa : "usa tarifa"
 
 @enduml
