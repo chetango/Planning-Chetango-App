@@ -120,13 +120,12 @@ entity "HistorialAuditoria" as Auditoria {
   fecha_hora : datetime
 }
 
-entity "ConfiguracionSistema" as Config {
+entity "ConfiguracionNotificaciones" as Config {
   * id_config : UUID
   --
   anticipacion_alerta : int
   texto_vencimiento : string
   texto_agotamiento : string
-  ultima_modificacion : datetime
 }
 
 ' Relaciones principales
